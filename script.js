@@ -1,747 +1,598 @@
-/* ═══════════════════════════════════════════════════════════════
-   THE WEDDING EDITION — MASTER EDITORIAL SCRIPT
-   - Blessing Petal & Gold Dust Physics Shower Engine
-   - 3-Track Web Audio Traditional Synthesizer (Raag / Kirtan / Sangeet)
-   - Interactive 3-Day Itinerary Filter Tabs
-   - Interactive 4 Laavan Spiritual Carousel
-   - Personalized Digital Wedding Pass Generator
-   - Photo Heart Reactions & Gallery Lightbox
-   - RSVP with DJ Song Request & Live Wishing Well
-   ═══════════════════════════════════════════════════════════════ */
+/**
+ * ROYAL WEDDING INVITATION — JAVASCRIPT ENGINE
+ * Inspired by Artful Invites & Framer Luxury Interactive Experience
+ */
 
 (function () {
   'use strict';
 
-  // ─── CONFIGURATION ───
-  // Wedding Date: Friday, February 19, 2027 10:00 AM IST
-  const WEDDING_DATE = new Date('2027-02-19T10:00:00+05:30');
+  // ==========================================
+  // CONFIGURATION & GLOBAL STATE
+  // ==========================================
+  const WEDDING_CONFIG = {
+    coupleNames: 'Kiran & Rahul',
+    weddingDate: new Date('2026-12-17T10:00:00+05:30'),
+    hashtag: '#Rahulkikiran',
+    whatsappPhone: '919876543210',
+    audioTracks: [
+      { name: '🎶 Raag Yaman (Sitar)', mode: 'yaman' },
+      { name: '🪈 Royal Flute & Shehnai', mode: 'shehnai' },
+      { name: '✨ Sacred Vivah Harmonies', mode: 'sacred' }
+    ]
+  };
 
-  // ─── DOM SELECTORS ───
-  const $ = (sel, ctx = document) => ctx.querySelector(sel);
-  const $$ = (sel, ctx = document) => [...ctx.querySelectorAll(sel)];
+  let currentTrackIndex = 0;
+  let isAudioPlaying = false;
+  let currentEventSlide = 0;
+  const totalEventSlides = 5;
 
-  const editorialCover     = $('#editorial-cover');
-  const btnEnterCover      = $('#btn-enter-cover');
-  const mainNav            = $('#main-nav');
-  const navToggle          = $('#nav-toggle');
-  const navMenu            = $('#nav-menu');
-  const audioPill          = $('#audio-pill');
-  const trackBtns          = $$('.track-btn');
-  const btnShowerBlessings = $('#btn-shower-blessings');
-  const blessingsCanvas    = $('#blessings-canvas');
-  const lbModal            = $('#lightbox-editorial');
-  const lbImg              = $('#lb-stage-img');
-  const lbCaption          = $('#lb-stage-caption');
-  const rsvpForm           = $('#rsvp-editorial-form');
-  const rsvpSuccess        = $('#rsvp-success-view');
-  const successMsg         = $('#success-personal-msg');
-  const wishesList         = $('#wishes-list');
-  const passInputName      = $('#pass-input-name');
-  const passNameDisplay    = $('#pass-name-display');
-  const btnSavePass        = $('#btn-save-pass');
+  // ==========================================
+  // DOM ELEMENT REFERENCES
+  // ==========================================
+  const musicToggleBtn = document.getElementById('music-toggle');
+  const trackSwitchBtn = document.getElementById('track-switch');
+  const trackLabel = document.getElementById('track-label');
+  const touchMagicBtn = document.getElementById('btn-touch-magic');
+  const pageDots = document.querySelectorAll('.page-dot');
+  const cards = document.querySelectorAll('.invite-card');
+  const carouselTrack = document.getElementById('events-track');
+  const carouselPrevBtn = document.getElementById('carousel-prev');
+  const carouselNextBtn = document.getElementById('carousel-next');
+  const carouselDots = document.querySelectorAll('.c-dot');
+  const toastPopup = document.getElementById('toast-popup');
+  const petalToggleBtn = document.getElementById('petal-toggle');
 
-  // ─── STATE ───
-  let isCoverOpened     = false;
-  let isAudioPlaying    = false;
-  let currentTrack      = 'raag';
-  let currentGalleryIdx = 0;
-  let galleryItemsData  = [];
-
-  // ═══════════════════════════════════════════════════════════════
-  // 1. BLESSING PETAL & GOLD DUST PARTICLE PHYSICS ENGINE
-  // ═══════════════════════════════════════════════════════════════
-  let canvasCtx = null;
-  let particles = [];
-  let animFrameId = null;
-
-  function initCanvas() {
-    if (!blessingsCanvas) return;
-    canvasCtx = blessingsCanvas.getContext('2d');
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
+  // ==========================================
+  // TOAST NOTIFICATION UTILITY
+  // ==========================================
+  function showToast(message, duration = 3000) {
+    if (!toastPopup) return;
+    toastPopup.textContent = message;
+    toastPopup.classList.add('show');
+    clearTimeout(window._toastTimeout);
+    window._toastTimeout = setTimeout(() => {
+      toastPopup.classList.remove('show');
+    }, duration);
   }
+  window.showToast = showToast;
 
-  function resizeCanvas() {
-    if (!blessingsCanvas) return;
-    blessingsCanvas.width = window.innerWidth;
-    blessingsCanvas.height = window.innerHeight;
-  }
-
-  class PetalParticle {
-    constructor() {
-      this.reset();
-      this.y = Math.random() * -window.innerHeight * 0.5; // Start above screen
-    }
-
-    reset() {
-      this.x = Math.random() * window.innerWidth;
-      this.y = -20;
-      this.size = 8 + Math.random() * 12;
-      this.speedY = 1.2 + Math.random() * 2.5;
-      this.speedX = Math.sin(Math.random() * Math.PI) * 1.5;
-      this.rotation = Math.random() * 360;
-      this.rotSpeed = (Math.random() - 0.5) * 2;
-      this.wobble = Math.random() * Math.PI * 2;
-      this.wobbleSpeed = 0.03 + Math.random() * 0.05;
-
-      // Color Palette: Rose Petal (Blush), Marigold (Gold/Orange), or Gold Glitter Spark
-      const types = ['rose', 'marigold', 'goldSpark'];
-      this.type = types[Math.floor(Math.random() * types.length)];
-
-      if (this.type === 'rose') {
-        this.color = `rgba(${230 + Math.random() * 25}, ${160 + Math.random() * 40}, ${170 + Math.random() * 30}, ${0.75 + Math.random() * 0.25})`;
-      } else if (this.type === 'marigold') {
-        this.color = `rgba(${240 + Math.random() * 15}, ${170 + Math.random() * 50}, ${30 + Math.random() * 40}, ${0.8 + Math.random() * 0.2})`;
-      } else {
-        this.color = `rgba(212, 182, 112, ${0.7 + Math.random() * 0.3})`;
-        this.size = 2.5 + Math.random() * 4;
-      }
-    }
-
-    update() {
-      this.y += this.speedY;
-      this.wobble += this.wobbleSpeed;
-      this.x += Math.sin(this.wobble) * 1.2 + this.speedX * 0.2;
-      this.rotation += this.rotSpeed;
-
-      if (this.y > window.innerHeight + 30) {
-        this.reset();
-      }
-    }
-
-    draw(ctx) {
-      ctx.save();
-      ctx.translate(this.x, this.y);
-      ctx.rotate((this.rotation * Math.PI) / 180);
-
-      ctx.fillStyle = this.color;
-      ctx.beginPath();
-
-      if (this.type === 'goldSpark') {
-        ctx.arc(0, 0, this.size, 0, Math.PI * 2);
-        ctx.shadowColor = '#E5CD82';
-        ctx.shadowBlur = 6;
-      } else {
-        // Organic Petal Shape
-        ctx.ellipse(0, 0, this.size * 0.6, this.size, Math.PI / 4, 0, Math.PI * 2);
-      }
-
-      ctx.fill();
-      ctx.restore();
-    }
-  }
-
-  function startPetalShower(burst = 50) {
-    initCanvas();
-    if (!canvasCtx) return;
-
-    for (let i = 0; i < burst; i++) {
-      particles.push(new PetalParticle());
-    }
-
-    if (!animFrameId) {
-      loopParticles();
-    }
-  }
-
-  function loopParticles() {
-    if (!canvasCtx || !blessingsCanvas) return;
-    canvasCtx.clearRect(0, 0, blessingsCanvas.width, blessingsCanvas.height);
-
-    for (let i = 0; i < particles.length; i++) {
-      particles[i].update();
-      particles[i].draw(canvasCtx);
-    }
-
-    animFrameId = requestAnimationFrame(loopParticles);
-  }
-
-  function initBlessingShower() {
-    if (btnShowerBlessings) {
-      btnShowerBlessings.addEventListener('click', () => {
-        playCoverChime();
-        startPetalShower(45);
-      });
-    }
-  }
-
-  // ═══════════════════════════════════════════════════════════════
-  // 2. MULTI-TRACK WEB AUDIO RAGA SYNTHESIZER
-  // ═══════════════════════════════════════════════════════════════
+  // ==========================================
+  // WEB AUDIO API — ZERO-DEPENDENCY INDIAN INSTRUMENTAL SYNTHESIZER
+  // ==========================================
   let audioCtx = null;
+  let synthInterval = null;
   let masterGain = null;
-  let melodyInterval = null;
 
-  function initAudioEngine() {
-    if (audioCtx) return;
-    try {
+  function initAudioContext() {
+    if (!audioCtx) {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       audioCtx = new AudioContext();
       masterGain = audioCtx.createGain();
-      masterGain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+      masterGain.gain.setValueAtTime(0.18, audioCtx.currentTime);
       masterGain.connect(audioCtx.destination);
-    } catch (e) {
-      console.log('Web Audio not supported');
     }
-  }
-
-  function playCoverChime() {
-    initAudioEngine();
-    if (!audioCtx) return;
-
     if (audioCtx.state === 'suspended') {
       audioCtx.resume();
     }
+  }
 
-    const now = audioCtx.currentTime;
-    const notes = [293.66, 369.99, 440.00, 587.33, 880.00];
-
-    notes.forEach((freq, idx) => {
+  // Play a single resonant melodic acoustic tone
+  function playMelodicTone(freq, time, duration, type = 'sine') {
+    if (!audioCtx) return;
+    try {
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
 
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, time);
 
-      gain.gain.setValueAtTime(0, now + idx * 0.08);
-      gain.gain.linearRampToValueAtTime(0.08 / (idx + 1), now + idx * 0.08 + 0.04);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.08 + 2.2);
+      // Acoustic envelope (gentle attack, shimmering decay)
+      gain.gain.setValueAtTime(0.001, time);
+      gain.gain.exponentialRampToValueAtTime(0.3, time + 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
 
       osc.connect(gain);
       gain.connect(masterGain);
 
-      osc.start(now + idx * 0.08);
-      osc.stop(now + idx * 0.08 + 2.3);
+      osc.start(time);
+      osc.stop(time + duration);
+    } catch (e) {
+      console.warn('Audio note play error:', e);
+    }
+  }
+
+  // Chime burst for "Touch here for Magic"
+  function playMagicChime() {
+    initAudioContext();
+    const now = audioCtx.currentTime;
+    const chimeNotes = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98]; // C5, E5, G5, C6, E6, G6
+    chimeNotes.forEach((freq, i) => {
+      playMelodicTone(freq, now + i * 0.09, 1.2, 'triangle');
     });
   }
 
-  function startAmbientMelody() {
-    initAudioEngine();
-    if (!audioCtx) return;
+  // Raag Melodic Sequencer
+  function startAcousticSynthesizer(mode = 'yaman') {
+    initAudioContext();
+    stopAcousticSynthesizer();
 
-    if (audioCtx.state === 'suspended') {
-      audioCtx.resume();
-    }
+    const scaleYaman = [261.63, 293.66, 329.63, 369.99, 392.00, 440.00, 493.88, 523.25]; // C, D, E, F#, G, A, B, C
+    const scaleShehnai = [293.66, 329.63, 369.99, 440.00, 493.88, 587.33];
+    const scaleSacred = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99];
 
-    isAudioPlaying = true;
-    if (audioPill) audioPill.classList.add('playing');
+    let currentScale = scaleYaman;
+    if (mode === 'shehnai') currentScale = scaleShehnai;
+    if (mode === 'sacred') currentScale = scaleSacred;
 
-    const trackScales = {
-      raag: [146.83, 185.00, 220.00, 293.66, 369.99, 440.00, 587.33, 739.99], // Yaman
-      shabad: [130.81, 164.81, 196.00, 261.63, 329.63, 392.00, 523.25],       // Meditative Bilawal
-      sangeet: [164.81, 196.00, 220.00, 246.94, 329.63, 392.00, 440.00, 493.88] // Festive Folk
-    };
+    let step = 0;
+    // Ambient Tanpura Drone
+    playDroneNote(130.81); // C3
+    playDroneNote(196.00); // G3
 
-    function playNote(freq, dur = 2.0, vol = 0.05) {
+    synthInterval = setInterval(() => {
       if (!isAudioPlaying || !audioCtx) return;
       const now = audioCtx.currentTime;
+      const noteFreq = currentScale[Math.floor(Math.random() * currentScale.length)];
+      const duration = 1.2 + Math.random() * 0.8;
+      playMelodicTone(noteFreq, now, duration, 'sine');
+
+      // Add soft harmony note
+      if (step % 3 === 0) {
+        const harmFreq = currentScale[(step + 2) % currentScale.length] * 0.5;
+        playMelodicTone(harmFreq, now + 0.15, 1.8, 'triangle');
+      }
+      step++;
+    }, 900);
+  }
+
+  function playDroneNote(freq) {
+    if (!audioCtx) return;
+    try {
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
-
-      osc.type = currentTrack === 'sangeet' ? 'sawtooth' : 'triangle';
-      osc.frequency.setValueAtTime(freq, now);
-
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(vol, now + 0.04);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
-
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
       osc.connect(gain);
       gain.connect(masterGain);
+      osc.start();
+      window._droneOsc = osc;
+    } catch (e) {}
+  }
 
-      osc.start(now);
-      osc.stop(now + dur + 0.1);
+  function stopAcousticSynthesizer() {
+    if (synthInterval) {
+      clearInterval(synthInterval);
+      synthInterval = null;
     }
+  }
 
-    if (melodyInterval) clearInterval(melodyInterval);
-    melodyInterval = setInterval(() => {
-      if (!isAudioPlaying) return;
-      const currentScale = trackScales[currentTrack] || trackScales.raag;
-      const randNote = currentScale[Math.floor(Math.random() * currentScale.length)];
-      playNote(randNote, 2.2 + Math.random() * 1.5, 0.045);
+  function toggleAudio() {
+    initAudioContext();
+    isAudioPlaying = !isAudioPlaying;
 
-      if (Math.random() > 0.65) {
-        setTimeout(() => playNote(currentScale[0], 3.2, 0.035), 300);
+    if (isAudioPlaying) {
+      document.body.classList.add('playing');
+      startAcousticSynthesizer(WEDDING_CONFIG.audioTracks[currentTrackIndex].mode);
+      showToast(`🎵 Playing: ${WEDDING_CONFIG.audioTracks[currentTrackIndex].name}`);
+    } else {
+      document.body.classList.remove('playing');
+      stopAcousticSynthesizer();
+      showToast('🔇 Music Muted');
+    }
+  }
+
+  function switchAudioTrack() {
+    initAudioContext();
+    currentTrackIndex = (currentTrackIndex + 1) % WEDDING_CONFIG.audioTracks.length;
+    const track = WEDDING_CONFIG.audioTracks[currentTrackIndex];
+    if (trackLabel) trackLabel.textContent = track.name;
+
+    if (isAudioPlaying) {
+      startAcousticSynthesizer(track.mode);
+      showToast(`🎵 Switched to: ${track.name}`);
+    } else {
+      toggleAudio();
+    }
+  }
+
+  if (musicToggleBtn) musicToggleBtn.addEventListener('click', toggleAudio);
+  if (trackSwitchBtn) trackSwitchBtn.addEventListener('click', switchAudioTrack);
+
+  // ==========================================
+  // CARD NAVIGATION & SCROLL OBSERVER
+  // ==========================================
+  function goToCard(cardIndex) {
+    const targetCard = document.getElementById(`card-${cardIndex + 1}`);
+    if (targetCard) {
+      targetCard.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+  window.goToCard = goToCard;
+
+  // Touch Here For Magic Action
+  if (touchMagicBtn) {
+    touchMagicBtn.addEventListener('click', () => {
+      // Play acoustic chime
+      playMagicChime();
+
+      // Trigger sparkle confetti burst
+      burstConfetti();
+
+      // Start music if not playing
+      if (!isAudioPlaying) {
+        setTimeout(() => {
+          toggleAudio();
+        }, 500);
       }
-    }, 1600);
-  }
 
-  function stopAmbientMelody() {
-    isAudioPlaying = false;
-    if (audioPill) audioPill.classList.remove('playing');
-    if (melodyInterval) {
-      clearInterval(melodyInterval);
-      melodyInterval = null;
-    }
-  }
-
-  function initAudio() {
-    if (audioPill) {
-      audioPill.addEventListener('click', () => {
-        if (isAudioPlaying) {
-          stopAmbientMelody();
-        } else {
-          startAmbientMelody();
-        }
-      });
-    }
-
-    trackBtns.forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        trackBtns.forEach((b) => b.classList.remove('active'));
-        btn.classList.add('active');
-        currentTrack = btn.dataset.track;
-        if (!isAudioPlaying) {
-          startAmbientMelody();
-        }
-      });
-    });
-  }
-
-  // ═══════════════════════════════════════════════════════════════
-  // 3. EDITORIAL FOLIO OPENING CONTROLLER
-  // ═══════════════════════════════════════════════════════════════
-  function openFolio() {
-    if (isCoverOpened) return;
-    isCoverOpened = true;
-
-    playCoverChime();
-    startPetalShower(35);
-
-    if (editorialCover) {
-      editorialCover.classList.add('opened');
-    }
-
-    document.body.classList.remove('editorial-invitation-mode');
-
-    // Staggered hero entrance
-    const heroAnims = $$('.anim-fade', $('#hero'));
-    heroAnims.forEach((el) => {
-      const delay = parseInt(el.dataset.delay || 0);
+      // Smoothly navigate to Card 2 (Family Blessings)
       setTimeout(() => {
-        el.classList.add('in-view');
-      }, delay);
+        goToCard(1);
+      }, 700);
+
+      showToast('✨ Welcome to Kiran & Rahul\'s Wedding Festivities!');
     });
-
-    setTimeout(startAmbientMelody, 800);
   }
 
-  function initCoverInteraction() {
-    if (btnEnterCover) {
-      btnEnterCover.addEventListener('click', openFolio);
-    }
-    if (editorialCover) {
-      editorialCover.addEventListener('click', (e) => {
-        if (e.target === editorialCover) openFolio();
-      });
-    }
-  }
-
-  // ═══════════════════════════════════════════════════════════════
-  // 4. DAY-BY-DAY ITINERARY FILTER TABS
-  // ═══════════════════════════════════════════════════════════════
-  function initDayTabs() {
-    const dayBtns = $$('.day-tab-btn');
-    const cards = $$('.itinerary-card');
-    if (!dayBtns.length || !cards.length) return;
-
-    dayBtns.forEach((btn) => {
-      btn.addEventListener('click', () => {
-        dayBtns.forEach((b) => b.classList.remove('active'));
-        btn.classList.add('active');
-
-        const selectedDay = btn.dataset.day;
-
-        cards.forEach((card) => {
-          if (selectedDay === 'all' || card.dataset.eventDay === selectedDay) {
-            card.classList.remove('hidden-by-tab');
-          } else {
-            card.classList.add('hidden-by-tab');
-          }
+  // ScrollSpy to update active top-bar page dots
+  const cardObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        const index = parseInt(entry.target.getAttribute('data-card-index'), 10);
+        pageDots.forEach((dot, dotIdx) => {
+          dot.classList.toggle('active', dotIdx === index);
         });
-      });
+      }
+    });
+  }, { threshold: 0.5 });
+
+  cards.forEach((card) => cardObserver.observe(card));
+
+  // Click on Page Dots
+  pageDots.forEach((dot) => {
+    dot.addEventListener('click', () => {
+      const idx = parseInt(dot.getAttribute('data-index'), 10);
+      goToCard(idx);
+    });
+  });
+
+  // ==========================================
+  // EVENTS CAROUSEL SLIDESHOW
+  // ==========================================
+  function updateCarousel() {
+    if (carouselTrack) {
+      carouselTrack.style.transform = `translateX(-${currentEventSlide * 100}%)`;
+    }
+    carouselDots.forEach((dot, i) => {
+      dot.classList.toggle('active', i === currentEventSlide);
     });
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // 5. INTERACTIVE 4 LAAVAN CAROUSEL
-  // ═══════════════════════════════════════════════════════════════
-  const laavanData = {
-    1: {
-      step: 'First Laav',
-      title: 'Faith, Righteousness & Daily Duty',
-      gurmukhi: 'ਹਰਿ ਪਹਿਲੜੀ ਲਾਵ ਪਰਵਿਰਤੀ ਕਰਮ ਦ੍ਰਿੜਾਇਆ ਬਲਿ ਰਾਮ ਜੀਉ ॥',
-      meaning: '"In the first round of the marriage ceremony, the Lord instructs the couple to perform the righteous duties of family life. Hold firm to faith, meditate on the Divine Name, and let righteousness guide every thought."'
-    },
-    2: {
-      step: 'Second Laav',
-      title: 'Reverence & Awakening Divine Love',
-      gurmukhi: 'ਹਰਿ ਦੂਜੜੀ ਲਾਵ ਸਤਿਗੁਰੁ ਪੁਰਖੁ ਮਿਲਾਇਆ ਬਲਿ ਰਾਮ ਜੀਉ ॥',
-      meaning: '"In the second round, the Lord leads the souls to meet the True Guru. Shedding pride and ego, the heart fills with reverence and unconditional divine love for one another and the Creator."'
-    },
-    3: {
-      step: 'Third Laav',
-      title: 'Detachment & Spiritual Joy',
-      gurmukhi: 'ਹਰਿ ਤੀਜੜੀ ਲਾਵ ਮਨਿ ਚਾਉ ਭਇਆ ਬੈਰਾਗੀਆ ਬਲਿ ਰਾਮ ਜੀਉ ॥',
-      meaning: '"In the third round, yearning and contentment arise in the mind. The couple finds joy in the company of the holy, singing the praises of the Divine and filling their home with peace."'
-    },
-    4: {
-      step: 'Fourth Laav',
-      title: 'Eternal Oneness & Harmony',
-      gurmukhi: 'ਹਰਿ ਚਉਥੜੀ ਲਾਵ ਮਨਿ ਸਹਜੁ ਭਇਆ ਹਰਿ ਪਾਇਆ ਬਲਿ ਰਾਮ ਜੀਉ ॥',
-      meaning: '"In the fourth round, spiritual poise is attained. The two souls merge into one divine melody, blessed by Waheguru to walk as eternal partners in this life and beyond."'
+  function nextEventSlide() {
+    currentEventSlide = (currentEventSlide + 1) % totalEventSlides;
+    updateCarousel();
+  }
+
+  function prevEventSlide() {
+    currentEventSlide = (currentEventSlide - 1 + totalEventSlides) % totalEventSlides;
+    updateCarousel();
+  }
+
+  if (carouselNextBtn) carouselNextBtn.addEventListener('click', nextEventSlide);
+  if (carouselPrevBtn) carouselPrevBtn.addEventListener('click', prevEventSlide);
+
+  carouselDots.forEach((dot) => {
+    dot.addEventListener('click', () => {
+      currentEventSlide = parseInt(dot.getAttribute('data-slide'), 10);
+      updateCarousel();
+    });
+  });
+
+  // Touch Swipe Support for Events Carousel
+  let touchStartX = 0;
+  let touchEndX = 0;
+  if (carouselTrack) {
+    carouselTrack.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    carouselTrack.addEventListener('touchend', (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      handleSwipe();
+    }, { passive: true });
+  }
+
+  function handleSwipe() {
+    const diff = touchEndX - touchStartX;
+    if (Math.abs(diff) > 40) {
+      if (diff < 0) {
+        nextEventSlide();
+      } else {
+        prevEventSlide();
+      }
+    }
+  }
+
+  // ==========================================
+  // ADD TO CALENDAR (.ICS GENERATOR)
+  // ==========================================
+  window.addToCalendar = function (title, startIso, location) {
+    const start = new Date(startIso);
+    const end = new Date(start.getTime() + 4 * 60 * 60 * 1000); // 4 hrs duration
+
+    const formatDate = (date) => {
+      return date.toISOString().replace(/-|:|\.\d+/g, '');
+    };
+
+    const icsContent = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Kiran & Rahul Wedding//EN',
+      'BEGIN:VEVENT',
+      `SUMMARY:${title} - Kiran & Rahul's Wedding`,
+      `DESCRIPTION:Join us to celebrate ${title} for Kiran & Rahul's Wedding celebrations!`,
+      `LOCATION:${location}`,
+      `DTSTART:${formatDate(start)}`,
+      `DTEND:${formatDate(end)}`,
+      'STATUS:CONFIRMED',
+      'END:VEVENT',
+      'END:VCALENDAR'
+    ].join('\r\n');
+
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = window.URL.createObjectURL(blob);
+    link.setAttribute('download', `${title.replace(/\s+/g, '_')}_Invitation.ics`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    showToast(`📅 Downloaded calendar event for ${title}!`);
+  };
+
+  // ==========================================
+  // LIVE COUNTDOWN TIMER
+  // ==========================================
+  function updateCountdown() {
+    const now = new Date().getTime();
+    const distance = WEDDING_CONFIG.weddingDate.getTime() - now;
+
+    const countDays = document.getElementById('count-days');
+    const countHours = document.getElementById('count-hours');
+    const countMinutes = document.getElementById('count-minutes');
+    const countSeconds = document.getElementById('count-seconds');
+
+    if (distance < 0) {
+      if (countDays) countDays.textContent = '00';
+      if (countHours) countHours.textContent = '00';
+      if (countMinutes) countMinutes.textContent = '00';
+      if (countSeconds) countSeconds.textContent = '00';
+      return;
+    }
+
+    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+    const pad = (n) => (n < 10 ? '0' + n : n);
+
+    if (countDays) countDays.textContent = pad(days);
+    if (countHours) countHours.textContent = pad(hours);
+    if (countMinutes) countMinutes.textContent = pad(minutes);
+    if (countSeconds) countSeconds.textContent = pad(seconds);
+  }
+
+  setInterval(updateCountdown, 1000);
+  updateCountdown();
+
+  // ==========================================
+  // IN-APP RSVP FORM SUBMISSION & WHATSAPP
+  // ==========================================
+  window.handleRSVPSubmit = function (event) {
+    event.preventDefault();
+    const guestName = document.getElementById('guest-name').value.trim();
+    const guestPhone = document.getElementById('guest-phone').value.trim();
+    const guestCount = document.getElementById('guest-count').value;
+    const wishes = document.getElementById('guest-wishes').value.trim();
+
+    const selectedEvents = Array.from(document.querySelectorAll('input[name="events"]:checked'))
+      .map((cb) => cb.value)
+      .join(', ');
+
+    // Burst celebration confetti
+    burstConfetti();
+
+    // Show success message
+    const successBox = document.getElementById('rsvp-success');
+    if (successBox) {
+      successBox.style.display = 'block';
+      successBox.innerHTML = `🎉 <strong>Dhanyawad, ${guestName}!</strong><br>We have recorded your RSVP for <strong>${guestCount} guest(s)</strong>. Looking forward to celebrating together!`;
+    }
+
+    // Auto-prepare WhatsApp message link
+    const waText = encodeURIComponent(
+      `Namaste Kiran & Rahul! 🎉\n\nI have confirmed our RSVP for your wedding celebrations!\n\n👤 Name: ${guestName}\n👥 Guests: ${guestCount}\n🎉 Events Attending: ${selectedEvents || 'All Events'}\n💬 Wishes: ${wishes || 'Best wishes for a lifetime of love!'}`
+    );
+    const waUrl = `https://api.whatsapp.com/send?phone=${WEDDING_CONFIG.whatsappPhone}&text=${waText}`;
+
+    // Update WhatsApp button with personalized details
+    const waBtn = document.getElementById('whatsapp-rsvp-btn');
+    if (waBtn) {
+      waBtn.href = waUrl;
+    }
+
+    showToast(`✨ RSVP confirmed for ${guestName}!`);
+  };
+
+  // ==========================================
+  // HASHTAG COPY TO CLIPBOARD
+  // ==========================================
+  window.copyHashtag = function () {
+    const hashtag = WEDDING_CONFIG.hashtag;
+    navigator.clipboard.writeText(hashtag).then(() => {
+      const copyLabel = document.getElementById('copy-btn-label');
+      if (copyLabel) copyLabel.textContent = 'Copied! ✅';
+      setTimeout(() => {
+        if (copyLabel) copyLabel.textContent = 'Copy Hashtag';
+      }, 2500);
+      showToast(`📋 Copied ${hashtag} to clipboard!`);
+    }).catch(() => {
+      showToast(`Hashtag: ${hashtag}`);
+    });
+  };
+
+  // ==========================================
+  // PERSONALIZED VIP GUEST PASS
+  // ==========================================
+  window.generateVIPPass = function () {
+    const input = document.getElementById('vip-guest-input');
+    const display = document.getElementById('vip-display-name');
+    if (input && display) {
+      const name = input.value.trim() || 'Honored Wedding Guest';
+      display.textContent = name;
+      showToast(`👑 VIP Pass generated for ${name}!`);
+      burstConfetti();
     }
   };
 
-  function initLaavanCarousel() {
-    const tabs = $$('.laav-tab');
-    const displayCard = $('#laav-display-card');
-    const stepEl = $('#laav-step');
-    const titleEl = $('#laav-title');
-    const gurmukhiEl = $('#laav-gurmukhi');
-    const meaningEl = $('#laav-meaning');
+  window.saveVIPPass = function () {
+    window.print();
+  };
 
-    if (!tabs.length || !displayCard) return;
+  // ==========================================
+  // ROSE PETAL & GOLD DUST PARTICLE CANVAS ENGINE
+  // ==========================================
+  const canvas = document.getElementById('particle-canvas');
+  let ctx = null;
+  let particles = [];
+  let isParticlesActive = true;
 
-    tabs.forEach((tab) => {
-      tab.addEventListener('click', () => {
-        tabs.forEach((t) => t.classList.remove('active'));
-        tab.classList.add('active');
+  function initParticles() {
+    if (!canvas) return;
+    ctx = canvas.getContext('2d');
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
 
-        const laavNum = tab.dataset.laav;
-        const data = laavanData[laavNum];
-
-        // Play gentle bell chime
-        playCoverChime();
-
-        // Smooth fade update
-        displayCard.style.opacity = '0.3';
-        displayCard.style.transform = 'translateY(8px)';
-
-        setTimeout(() => {
-          if (stepEl) stepEl.textContent = data.step;
-          if (titleEl) titleEl.textContent = data.title;
-          if (gurmukhiEl) gurmukhiEl.textContent = data.gurmukhi;
-          if (meaningEl) meaningEl.textContent = data.meaning;
-
-          displayCard.style.opacity = '1';
-          displayCard.style.transform = 'translateY(0)';
-        }, 200);
-      });
-    });
-  }
-
-  // ═══════════════════════════════════════════════════════════════
-  // 6. PERSONALIZED DIGITAL WEDDING PASS GENERATOR
-  // ═══════════════════════════════════════════════════════════════
-  function initDigitalPass() {
-    if (!passInputName || !passNameDisplay) return;
-
-    passInputName.addEventListener('input', (e) => {
-      const val = e.target.value.trim();
-      passNameDisplay.textContent = val.length > 0 ? val : 'Honored Guest';
-    });
-
-    if (btnSavePass) {
-      btnSavePass.addEventListener('click', () => {
-        startPetalShower(30);
-        window.print();
-      });
-    }
-  }
-
-  // ═══════════════════════════════════════════════════════════════
-  // 7. PHOTO HEART REACTIONS & LIGHTBOX
-  // ═══════════════════════════════════════════════════════════════
-  function initGalleryReactions() {
-    const reactBtns = $$('.btn-react-heart');
-    reactBtns.forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const cntEl = $('.heart-cnt', btn);
-        if (cntEl) {
-          let current = parseInt(cntEl.textContent) || 0;
-          cntEl.textContent = current + 1;
-        }
-        btn.style.transform = 'scale(1.3)';
-        setTimeout(() => (btn.style.transform = 'scale(1)'), 250);
-        startPetalShower(8);
-      });
-    });
-
-    // Lightbox modal logic
-    const photoItems = $$('.gallery-photo-item');
-    if (!photoItems.length || !lbModal) return;
-
-    galleryItemsData = photoItems.map((item) => {
-      const img = $('img', item);
-      const title = $('.photo-title', item);
-      return {
-        src: img ? img.src : '',
-        alt: img ? img.alt : '',
-        title: title ? title.textContent : ''
-      };
-    });
-
-    photoItems.forEach((item, idx) => {
-      item.addEventListener('click', () => openLightbox(idx));
-    });
-
-    const closeBtn = $('#lb-close-btn');
-    const prevBtn  = $('#lb-prev-btn');
-    const nextBtn  = $('#lb-next-btn');
-
-    if (closeBtn) closeBtn.addEventListener('click', closeLightbox);
-    if (prevBtn)  prevBtn.addEventListener('click', () => navigateLightbox(-1));
-    if (nextBtn)  nextBtn.addEventListener('click', () => navigateLightbox(1));
-
-    lbModal.addEventListener('click', (e) => {
-      if (e.target === lbModal) closeLightbox();
-    });
-
-    document.addEventListener('keydown', (e) => {
-      if (!lbModal.classList.contains('active')) return;
-      if (e.key === 'Escape') closeLightbox();
-      if (e.key === 'ArrowLeft') navigateLightbox(-1);
-      if (e.key === 'ArrowRight') navigateLightbox(1);
-    });
-  }
-
-  function openLightbox(index) {
-    if (!galleryItemsData[index]) return;
-    currentGalleryIdx = index;
-    const item = galleryItemsData[index];
-
-    if (lbImg) {
-      lbImg.src = item.src;
-      lbImg.alt = item.alt;
-    }
-    if (lbCaption) {
-      lbCaption.textContent = item.title || item.alt;
+    // Seed initial particles (Rose petals + gold sparkles)
+    for (let i = 0; i < 35; i++) {
+      particles.push(createParticle());
     }
 
-    lbModal.classList.add('active');
-    document.body.style.overflow = 'hidden';
+    requestAnimationFrame(renderParticles);
   }
 
-  function closeLightbox() {
-    if (!lbModal) return;
-    lbModal.classList.remove('active');
-    document.body.style.overflow = '';
+  function resizeCanvas() {
+    if (!canvas) return;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
   }
 
-  function navigateLightbox(dir) {
-    if (!galleryItemsData.length) return;
-    currentGalleryIdx = (currentGalleryIdx + dir + galleryItemsData.length) % galleryItemsData.length;
-    openLightbox(currentGalleryIdx);
+  function createParticle(x, y, isBurst = false) {
+    const isPetal = Math.random() > 0.4;
+    return {
+      x: x !== undefined ? x : Math.random() * canvas.width,
+      y: y !== undefined ? y : Math.random() * canvas.height - 50,
+      size: isPetal ? 8 + Math.random() * 8 : 2 + Math.random() * 3,
+      speedX: isBurst ? (Math.random() - 0.5) * 8 : (Math.random() - 0.5) * 1.5,
+      speedY: isBurst ? (Math.random() - 0.5) * 8 : 0.8 + Math.random() * 1.2,
+      rotation: Math.random() * Math.PI * 2,
+      rotationSpeed: (Math.random() - 0.5) * 0.04,
+      opacity: 0.6 + Math.random() * 0.4,
+      isPetal: isPetal,
+      life: isBurst ? 100 : Infinity,
+      color: isPetal
+        ? ['#f06292', '#e91e63', '#f48fb1', '#ffb74d'][Math.floor(Math.random() * 4)]
+        : '#d1b17a'
+    };
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // 8. RSVP WITH SONG REQUEST & LIVE WISHING WELL
-  // ═══════════════════════════════════════════════════════════════
-  function initRSVP() {
-    if (!rsvpForm || !rsvpSuccess) return;
+  function renderParticles() {
+    if (!ctx || !isParticlesActive) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    rsvpForm.addEventListener('submit', (e) => {
-      e.preventDefault();
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
 
-      const formData = new FormData(rsvpForm);
-      const name = formData.get('name') || 'Beloved Guest';
-      const attend = formData.get('attendance');
-      const guests = formData.get('guest_count');
-      const song = formData.get('song');
-      const wishes = formData.get('wishes');
+      p.x += p.speedX;
+      p.y += p.speedY;
+      p.rotation += p.rotationSpeed;
 
-      if (successMsg) {
-        if (attend === 'Yes') {
-          successMsg.innerHTML = `Dearest <strong>${escapeHtml(name)}</strong>, we are overjoyed that you and your party of <strong>${guests}</strong> will join us in Amritsar! Waheguru Ji bless you.`;
-        } else {
-          successMsg.innerHTML = `Dearest <strong>${escapeHtml(name)}</strong>, thank you for sending your warm love and blessings. You will be dearly missed!`;
+      if (p.life !== Infinity) {
+        p.life--;
+        p.opacity = p.life / 100;
+        if (p.life <= 0) {
+          particles.splice(i, 1);
+          continue;
         }
       }
 
-      // Add to live wishing well stream
-      if ((wishes && wishes.trim().length > 0) || (song && song.trim().length > 0)) {
-        if (wishesList) {
-          const newCard = document.createElement('div');
-          newCard.className = 'wish-card';
-          let content = '';
-          if (wishes && wishes.trim().length > 0) {
-            content += `<p class="wish-quote">"${escapeHtml(wishes)}"</p>`;
-          }
-          if (song && song.trim().length > 0) {
-            content += `<p style="font-size: 0.78rem; color: var(--gold-dark); margin-bottom: 0.4rem;">🎵 Requested Track: <em>${escapeHtml(song)}</em></p>`;
-          }
-          content += `<div class="wish-from">— ${escapeHtml(name)} (Just now)</div>`;
-
-          newCard.innerHTML = content;
-          wishesList.prepend(newCard);
-        }
+      // Recycle fallen particles
+      if (p.y > canvas.height + 20) {
+        p.y = -20;
+        p.x = Math.random() * canvas.width;
       }
+      if (p.x < -20) p.x = canvas.width + 20;
+      if (p.x > canvas.width + 20) p.x = -20;
 
-      // Trigger celebratory petal shower
-      startPetalShower(50);
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rotation);
+      ctx.globalAlpha = p.opacity;
 
-      rsvpForm.hidden = true;
-      rsvpSuccess.hidden = false;
-    });
-  }
-
-  function escapeHtml(str) {
-    return str
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
-  }
-
-  // ═══════════════════════════════════════════════════════════════
-  // 9. LIVE WEDDING COUNTDOWN TIMER
-  // ═══════════════════════════════════════════════════════════════
-  function initCountdown() {
-    const dEl = $('#cd-days');
-    const hEl = $('#cd-hours');
-    const mEl = $('#cd-mins');
-    const sEl = $('#cd-secs');
-
-    if (!dEl || !hEl || !mEl || !sEl) return;
-
-    function update() {
-      const now = new Date();
-      const diff = WEDDING_DATE - now;
-
-      if (diff <= 0) {
-        dEl.textContent = '00';
-        hEl.textContent = '00';
-        mEl.textContent = '00';
-        sEl.textContent = '00';
-        return;
-      }
-
-      const days  = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const mins  = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const secs  = Math.floor((diff % (1000 * 60)) / 1000);
-
-      const dStr = String(days).padStart(2, '0');
-      const hStr = String(hours).padStart(2, '0');
-      const mStr = String(mins).padStart(2, '0');
-      const sStr = String(secs).padStart(2, '0');
-
-      if (dEl.textContent !== dStr) dEl.textContent = dStr;
-      if (hEl.textContent !== hStr) hEl.textContent = hStr;
-      if (mEl.textContent !== mStr) mEl.textContent = mStr;
-      if (sEl.textContent !== sStr) sEl.textContent = sStr;
-    }
-
-    update();
-    setInterval(update, 1000);
-  }
-
-  // ═══════════════════════════════════════════════════════════════
-  // 10. SCROLL REVEALS & NAVIGATION
-  // ═══════════════════════════════════════════════════════════════
-  function initScrollAndNav() {
-    const items = $$('.anim-up');
-    if (items.length) {
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const delay = parseInt(entry.target.dataset.delay || 0);
-            setTimeout(() => entry.target.classList.add('in-view'), delay);
-            observer.unobserve(entry.target);
-          }
-        });
-      }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
-
-      items.forEach((el) => observer.observe(el));
-    }
-
-    if (!mainNav) return;
-
-    window.addEventListener('scroll', () => {
-      if (window.scrollY > 50) {
-        mainNav.classList.add('scrolled');
+      if (p.isPetal) {
+        // Draw delicate rose petal curve
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, p.size, p.size * 0.6, Math.PI / 4, 0, Math.PI * 2);
+        ctx.fill();
       } else {
-        mainNav.classList.remove('scrolled');
+        // Draw golden stardust diamond
+        ctx.fillStyle = '#fce4a6';
+        ctx.shadowColor = '#d1b17a';
+        ctx.shadowBlur = 6;
+        ctx.beginPath();
+        ctx.arc(0, 0, p.size, 0, Math.PI * 2);
+        ctx.fill();
       }
-    }, { passive: true });
 
-    if (navToggle && navMenu) {
-      navToggle.addEventListener('click', () => {
-        const isOpen = navToggle.classList.toggle('open');
-        navMenu.classList.toggle('open');
-        navToggle.setAttribute('aria-expanded', isOpen);
-      });
-
-      $$('[data-nav]').forEach((link) => {
-        link.addEventListener('click', () => {
-          navToggle.classList.remove('open');
-          navMenu.classList.remove('open');
-          navToggle.setAttribute('aria-expanded', 'false');
-        });
-      });
+      ctx.restore();
     }
 
-    // Active Section Tracking
-    const sections = $$('section[id], header[id]');
-    const navLinks = $$('.nav-menu a');
+    requestAnimationFrame(renderParticles);
+  }
 
-    const navObserver = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          const id = entry.target.getAttribute('id');
-          navLinks.forEach((link) => {
-            link.classList.toggle('active', link.getAttribute('href') === `#${id}`);
-          });
-        }
-      });
-    }, { threshold: 0.2, rootMargin: '-60px 0px -50% 0px' });
+  function burstConfetti(x = window.innerWidth / 2, y = window.innerHeight / 2) {
+    for (let i = 0; i < 40; i++) {
+      particles.push(createParticle(x, y, true));
+    }
+  }
 
-    sections.forEach((sec) => navObserver.observe(sec));
-
-    // Smooth Scroll
-    $$('a[href^="#"]').forEach((anchor) => {
-      anchor.addEventListener('click', (e) => {
-        const targetId = anchor.getAttribute('href');
-        if (targetId === '#') return;
-
-        const targetEl = $(targetId);
-        if (!targetEl) return;
-
-        e.preventDefault();
-        const offset = mainNav ? mainNav.offsetHeight : 0;
-        const targetPos = targetEl.getBoundingClientRect().top + window.scrollY - offset;
-
-        window.scrollTo({
-          top: targetPos,
-          behavior: 'smooth'
-        });
-      });
+  if (petalToggleBtn) {
+    petalToggleBtn.addEventListener('click', () => {
+      isParticlesActive = !isParticlesActive;
+      if (isParticlesActive) {
+        renderParticles();
+        showToast('🌸 Petals & Gold Dust: ON');
+      } else {
+        if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+        showToast('🌸 Petals: OFF');
+      }
     });
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // INITIALIZATION
-  // ═══════════════════════════════════════════════════════════════
-  function init() {
-    initCoverInteraction();
-    initBlessingShower();
-    initAudio();
-    initDayTabs();
-    initLaavanCarousel();
-    initDigitalPass();
-    initGalleryReactions();
-    initRSVP();
-    initCountdown();
-    initScrollAndNav();
-  }
+  // Click anywhere to trigger subtle sparkle effect
+  document.addEventListener('click', (e) => {
+    // Only trigger if clicked outside form inputs
+    if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+      for (let i = 0; i < 6; i++) {
+        particles.push(createParticle(e.clientX, e.clientY, true));
+      }
+    }
+  });
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+  // Initialize Canvas
+  initParticles();
 
 })();
